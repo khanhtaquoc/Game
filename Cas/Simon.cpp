@@ -159,7 +159,6 @@ void CSimon::SetState(int state)
 
 CSimon * CSimon::__instance = NULL;
 
-
 CSimon * CSimon::GetInstance()
 {
 	if (__instance == NULL) __instance = new CSimon();

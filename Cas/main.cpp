@@ -26,6 +26,8 @@
 #include "Game.h"
 #include "GameObject.h"
 #include "Textures.h"
+#include "TileMap.h"
+
 #include "Simon.h"
 #include "Box2.h"
 #include "Torch.h"
@@ -36,8 +38,8 @@
 #define MAIN_WINDOW_TITLE L"Castlevania"
 
 #define BACKGROUND_COLOR D3DCOLOR_XRGB(0, 0, 0)
-#define SCREEN_WIDTH 400
-#define SCREEN_HEIGHT 400
+#define SCREEN_WIDTH 448
+#define SCREEN_HEIGHT 380
 
 #define MAX_FRAME_RATE 60
 
@@ -46,12 +48,13 @@
 #define ID_TEX_ACTION 1
 #define ID_TEX_TORCH 8
 #define ID_TEX_BBOX_2 9
+#define ID_TEX_TILE 5
 
 
 CGame *game;
 CSimon *simon;
 CMorningstar *morningstar;
-
+CTileMap *Tile = new CTileMap();
 
 vector<LPGAMEOBJECT> objects;
 
@@ -138,6 +141,8 @@ void LoadResources()
 	textures->Add(ID_TEX_SIMON_DEATH, L"textures\\simondeath.png", D3DCOLOR_XRGB(255, 0, 255));
 	textures->Add(ID_TEX_BBOX_2, L"textures\\ground\\2.png", D3DCOLOR_XRGB(255, 255, 255));
 	textures->Add(ID_TEX_TORCH, L"textures\\ground\\0.png", D3DCOLOR_XRGB(255, 0, 255));
+	textures->Add(ID_TEX_TILE, L"textures\\Leve1Tile.png", D3DCOLOR_XRGB(255, 255, 255));
+	
 
 	CSprites * sprites = CSprites::GetInstance();
 	CAnimations * animations = CAnimations::GetInstance();
@@ -197,11 +202,11 @@ void LoadResources()
 
 	LPANIMATION ani;
 
-	ani = new CAnimation(100);	// 0 idle right
+	ani = new CAnimation(120);	// 0 idle right
 	ani->Add(10001);
 	animations->Add(400, ani);
 
-	ani = new CAnimation(100);	// 1 idle left
+	ani = new CAnimation(120);	// 1 idle left
 	ani->Add(10011);
 	animations->Add(401, ani);
 
@@ -277,14 +282,6 @@ void LoadResources()
 	ani->Add(80001);
 	animations->Add(800, ani);
 
-	for (int i = 1; i < 4; i++)
-	{
-		CTorch *torch = new CTorch();
-		torch->AddAnimation(800);
-		torch->SetPosition(400.0f * i, 235.0f);
-		objects.push_back(torch);
-	}
-	
 	simon = CSimon::GetInstance();
 	simon->AddAnimation(401);		// 0 idle right 
 	simon->AddAnimation(400);		// 1 idle left 
@@ -313,18 +310,27 @@ void LoadResources()
 	morningstar->AddAnimation(720);
 	objects.push_back(morningstar);
 
+	for (int i = 1; i < 4; i++)
+	{
+		CTorch *torch = new CTorch();
+		torch->AddAnimation(800);
+		torch->SetPosition(200.0f * i, 226.0f);
+		objects.push_back(torch);
+	}
 
-
-	for (int i = 0; i < 30; i++)
+	for (int i = 0; i < 48; i++)
 	{
 		CBox2 *box2 = new CBox2();
 		box2->AddAnimation(222);
-		box2->SetPosition(0 + i * 32.0f, 300.0f);
+		box2->SetPosition(0 + i * 32.0f, 288.0f);
 		objects.push_back(box2);
 	}
-
 	
-	
+     /*--------------------------------------------------*/
+	LPDIRECT3DTEXTURE9 texTile = textures->Get(ID_TEX_TILE);
+	Tile->SetColRow(48, 10);
+	Tile->SetwidthTexTile(32 * 85);
+	Tile->LoadTileMap(texTile);
 }
 
 /*
@@ -346,9 +352,24 @@ void Update(DWORD dt)
 		objects[i]->Update(dt,&coObjects);
 	}
 
-	float cameraX = simon->x - SCREEN_WIDTH / 2;
-	float cameraY = 0;
-	game->setCamera(cameraX, cameraY);
+	if (simon->x < SCREEN_WIDTH/2)
+	{
+		float cameraX = 0;
+		float cameraY = 0;
+		game->setCamera(cameraX, cameraY);
+	}
+	else if (simon->x > 1536 - SCREEN_WIDTH/2)
+	{
+		float cameraX = 1536 - SCREEN_WIDTH;
+		float cameraY = 0;
+		game->setCamera(cameraX, cameraY);
+	}
+	else
+	{
+		float cameraX = simon->x - SCREEN_WIDTH / 2;
+		float cameraY = 0;
+		game->setCamera(cameraX, cameraY);
+	}
 	
 }
 
@@ -367,6 +388,8 @@ void Render()
 		d3ddv->ColorFill(bb, NULL, BACKGROUND_COLOR);
 
 		spriteHandler->Begin(D3DXSPRITE_ALPHABLEND);
+		
+		Tile->Render();
 
 		for (int i = 0; i < objects.size(); i++)
 			objects[i]->Render();
